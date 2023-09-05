@@ -201,7 +201,6 @@ func OpenClientControlStream(
 	codec frame.Codec, packetReadWriter frame.PacketReadWriter,
 	logger *slog.Logger,
 ) (*ClientControlStream, error) {
-
 	conn, err := quic.DialAddr(ctx, addr, tlsConfig, quicConfig)
 	if err != nil {
 		return nil, err
@@ -217,8 +216,8 @@ func OpenClientControlStream(
 // NewClientControlStream returns ClientControlStream from quic Connection and the first stream form the Connection.
 func NewClientControlStream(
 	ctx context.Context, conn Connection, stream ContextReadWriteCloser,
-	codec frame.Codec, packetReadWriter frame.PacketReadWriter, logger *slog.Logger) *ClientControlStream {
-
+	codec frame.Codec, packetReadWriter frame.PacketReadWriter, logger *slog.Logger,
+) *ClientControlStream {
 	controlStream := &ClientControlStream{
 		ctx:                        ctx,
 		conn:                       conn,
@@ -307,7 +306,6 @@ func ackDataStream(stream frame.Reader) (string, error) {
 // If the handshake is successful, a DataStream will be returned by the AcceptStream() method.
 func (cs *ClientControlStream) RequestStream(hf *frame.HandshakeFrame) error {
 	err := cs.stream.WriteFrame(hf)
-
 	if err != nil {
 		return err
 	}

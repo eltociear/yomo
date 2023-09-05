@@ -55,6 +55,8 @@ func (c *y3codec) Encode(f frame.Frame) ([]byte, error) {
 		return encodeDataFrame(ff)
 	case *frame.BackflowFrame:
 		return encodeBackflowFrame(ff)
+	case *frame.StreamFrame:
+		return encodeStreamFrame(ff)
 	default:
 		return nil, ErrUnknownFrame
 	}

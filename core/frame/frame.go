@@ -127,6 +127,15 @@ type RejectedFrame struct {
 // Type returns the type of RejectedFrame.
 func (f *RejectedFrame) Type() Type { return TypeRejectedFrame }
 
+// StreamFrame is used to transmit data across DataStream.
+type StreamFrame struct {
+	StreamID  string
+	ChunkSize uint
+}
+
+// Type returns the type of StreamFrame.
+func (f *StreamFrame) Type() Type { return TypeStreamFrame }
+
 const (
 	TypeAuthenticationFrame    Type = 0x03 // TypeAuthenticationFrame is the type of AuthenticationFrame.
 	TypeAuthenticationAckFrame Type = 0x11 // TypeAuthenticationAckFrame is the type of AuthenticationAckFrame.
@@ -136,6 +145,7 @@ const (
 	TypeHandshakeAckFrame      Type = 0x29 // TypeHandshakeAckFrame is the type of HandshakeAckFrame.
 	TypeRejectedFrame          Type = 0x39 // TypeRejectedFrame is the type of RejectedFrame.
 	TypeBackflowFrame          Type = 0x2D // TypeBackflowFrame is the type of BackflowFrame.
+	TypeStreamFrame            Type = 0x40 // TypeStreamFrame is the type of StreamFrame.
 )
 
 var frameTypeStringMap = map[Type]string{
@@ -147,6 +157,7 @@ var frameTypeStringMap = map[Type]string{
 	TypeHandshakeAckFrame:      "HandshakeAckFrame",
 	TypeRejectedFrame:          "RejectedFrame",
 	TypeBackflowFrame:          "BackflowFrame",
+	TypeStreamFrame:            "StreamFrame",
 }
 
 // String returns a human-readable string which represents the frame type.
@@ -168,6 +179,7 @@ var frameTypeNewFuncMap = map[Type]func() Frame{
 	TypeHandshakeAckFrame:      func() Frame { return new(HandshakeAckFrame) },
 	TypeRejectedFrame:          func() Frame { return new(RejectedFrame) },
 	TypeBackflowFrame:          func() Frame { return new(BackflowFrame) },
+	TypeStreamFrame:            func() Frame { return new(StreamFrame) },
 }
 
 // NewFrame creates a new frame from Type.

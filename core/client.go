@@ -77,7 +77,9 @@ func (c *Client) Connect(ctx context.Context, addr string) error {
 	c.logger = c.logger.With("zipper_addr", addr)
 
 connect:
-	controlStream, dataStream, err := c.openStream(ctx, addr)
+	// TODO: Step 1
+	// controlStream, dataStream, err := c.openStream(ctx, addr)
+	controlStream, err := c.openControlStream(ctx, addr)
 	if err != nil {
 		if c.opts.connectUntilSucceed && !errors.As(err, new(ErrAuthenticateFailed)) {
 			c.logger.Error("failed to connect to zipper, trying to reconnect", "err", err)
@@ -89,15 +91,22 @@ connect:
 	}
 	c.logger.Info("connected to zipper")
 
-	go c.runBackground(ctx, addr, controlStream, dataStream)
+	// TODO: Step 2
+	// go c.runBackground(ctx, addr, controlStream, dataStream)
+	go c.runBackground(ctx, addr, controlStream)
 
 	return nil
 }
 
-func (c *Client) runBackground(ctx context.Context, addr string, controlStream *ClientControlStream, dataStream DataStream) {
+func (c *Client) runBackground(ctx context.Context, addr string, controlStream *ClientControlStream) {
 	reconnection := make(chan struct{})
-
-	go c.processStream(controlStream, dataStream, reconnection)
+	// go c.processStream(controlStream, dataStream, reconnection)
+	// TODO: Step 3
+	// 读取控制流中所有数据流, 并处理数据流
+	// for _, dataStream := range controlStream.Streams() {
+	// 	go c.processStream(dataStream, dataStream, reconnection)
+	// }
+	go c.processStream(controlStream, reconnection)
 
 	for {
 		select {
@@ -110,7 +119,9 @@ func (c *Client) runBackground(ctx context.Context, addr string, controlStream *
 		case <-reconnection:
 		reconnect:
 			var err error
-			controlStream, dataStream, err = c.openStream(ctx, addr)
+			// TODO: Step 4
+			// controlStream, dataStream, err = c.openStream(ctx, addr)
+			controlStream, err = c.openControlStream(ctx, addr)
 			if err != nil {
 				if errors.As(err, new(ErrAuthenticateFailed)) {
 					c.cleanStream(controlStream, err)
@@ -120,10 +131,42 @@ func (c *Client) runBackground(ctx context.Context, addr string, controlStream *
 				time.Sleep(time.Second)
 				goto reconnect
 			}
-			go c.processStream(controlStream, dataStream, reconnection)
+			// go c.processStream(controlStream, dataStream, reconnection)
+			go c.processStream(controlStream, reconnection)
 		}
 	}
 }
+
+// func (c *Client) runBackground(ctx context.Context, addr string, controlStream *ClientControlStream, dataStream DataStream) {
+// 	reconnection := make(chan struct{})
+//
+// 	go c.processStream(controlStream, dataStream, reconnection)
+//
+// 	for {
+// 		select {
+// 		case <-c.ctx.Done():
+// 			c.cleanStream(controlStream, nil)
+// 			return
+// 		case <-ctx.Done():
+// 			c.cleanStream(controlStream, ctx.Err())
+// 			return
+// 		case <-reconnection:
+// 		reconnect:
+// 			var err error
+// 			controlStream, dataStream, err = c.openStream(ctx, addr)
+// 			if err != nil {
+// 				if errors.As(err, new(ErrAuthenticateFailed)) {
+// 					c.cleanStream(controlStream, err)
+// 					return
+// 				}
+// 				c.logger.Error("reconnect error", "err", err)
+// 				time.Sleep(time.Second)
+// 				goto reconnect
+// 			}
+// 			go c.processStream(controlStream, dataStream, reconnection)
+// 		}
+// 	}
+// }
 
 // WriteFrame write frame to client.
 func (c *Client) WriteFrame(f frame.Frame) error {
@@ -192,18 +235,18 @@ func (c *Client) openControlStream(ctx context.Context, addr string) (*ClientCon
 	return controlStream, nil
 }
 
-func (c *Client) openStream(ctx context.Context, addr string) (*ClientControlStream, DataStream, error) {
-	controlStream, err := c.openControlStream(ctx, addr)
-	if err != nil {
-		return controlStream, nil, err
-	}
-	dataStream, err := c.openDataStream(ctx, controlStream)
-	if err != nil {
-		return controlStream, dataStream, err
-	}
-
-	return controlStream, dataStream, nil
-}
+// func (c *Client) openStream(ctx context.Context, addr string) (*ClientControlStream, DataStream, error) {
+// 	controlStream, err := c.openControlStream(ctx, addr)
+// 	if err != nil {
+// 		return controlStream, nil, err
+// 	}
+// 	dataStream, err := c.openDataStream(ctx, controlStream)
+// 	if err != nil {
+// 		return controlStream, dataStream, err
+// 	}
+//
+// 	return controlStream, dataStream, nil
+// }
 
 func (c *Client) openDataStream(ctx context.Context, controlStream *ClientControlStream) (DataStream, error) {
 	handshakeFrame := &frame.HandshakeFrame{
@@ -221,7 +264,14 @@ func (c *Client) openDataStream(ctx context.Context, controlStream *ClientContro
 	return controlStream.AcceptStream(ctx)
 }
 
-func (c *Client) processStream(controlStream *ClientControlStream, dataStream DataStream, reconnection chan<- struct{}) {
+// func (c *Client) processStream(controlStream *ClientControlStream, dataStream DataStream, reconnection chan<- struct{}) {
+func (c *Client) processStream(controlStream *ClientControlStream, reconnection chan<- struct{}) {
+	// 从控制流中读取数据流
+	dataStream, err := c.openDataStream(c.ctx, controlStream)
+	if err != nil {
+		c.handleFrameError(err, reconnection)
+		return
+	}
 	defer dataStream.Close()
 
 	readFrameChan := c.readFrame(dataStream)
