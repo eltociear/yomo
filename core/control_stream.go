@@ -118,6 +118,8 @@ func (ss *ServerControlStream) OpenStream(ctx context.Context, handshakeFunc Han
 	}
 	b, err := ss.codec.Encode(&frame.HandshakeAckFrame{
 		StreamID: ff.ID,
+		// TODO: 要不要加 StreamID ?
+
 	})
 	if err != nil {
 		return nil, err
@@ -210,7 +212,7 @@ func OpenClientControlStream(
 		return nil, err
 	}
 
-	return NewClientControlStream(conn.Context(), &QuicConnection{conn}, stream0, codec, packetReadWriter, logger), nil
+	return NewClientControlStream(conn.Context(), &QuicConnection{conn}, wrappeStream(stream0), codec, packetReadWriter, logger), nil
 }
 
 // NewClientControlStream returns ClientControlStream from quic Connection and the first stream form the Connection.
@@ -346,11 +348,17 @@ func (cs *ClientControlStream) AcceptStream(ctx context.Context) (DataStream, er
 		}
 	case result, ok := <-cs.acceptStreamResultChan:
 		if !ok {
+			cs.logger.Warn("acceptStreamResultChan closed")
 			return nil, ErrControllerClosed
 		}
 		if err := result.err; err != nil {
+			cs.logger.Error("acceptStreamResultChan return error", "error", err)
 			return nil, err
 		}
+		cs.logger.Debug(
+			"acceptStreamResultChan return stream",
+			"stream_id", result.stream.StreamID(),
+		)
 
 		cs.mu.Lock()
 		delete(cs.handshakeFrames, result.stream.ID())
@@ -378,6 +386,7 @@ func (cs *ClientControlStream) acceptStreamLoop(ctx context.Context) {
 func (cs *ClientControlStream) acceptStream(ctx context.Context) (DataStream, error) {
 	quicStream, err := cs.conn.AcceptStream(ctx)
 	if err != nil {
+		cs.logger.Error("client accept stream error", "error", err)
 		return nil, err
 	}
 
@@ -385,6 +394,7 @@ func (cs *ClientControlStream) acceptStream(ctx context.Context) (DataStream, er
 
 	streamID, err := ackDataStream(fs)
 	if err != nil {
+		cs.logger.Error("client ack data stream error", "error", err)
 		return nil, err
 	}
 

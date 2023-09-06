@@ -80,6 +80,8 @@ func (c *y3codec) Decode(data []byte, f frame.Frame) error {
 		return decodeDataFrame(data, ff)
 	case *frame.BackflowFrame:
 		return decodeBackflowFrame(data, ff)
+	case *frame.StreamFrame:
+		return decodeStreamFrame(data, ff)
 	default:
 		return ErrUnknownFrame
 	}

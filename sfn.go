@@ -159,6 +159,7 @@ func (s *streamFunction) Connect() error {
 						Tag:      data.Tag,
 						Metadata: data.Metadata,
 						Payload:  data.Payload,
+						Streamed: data.Streamed,
 					}
 
 					s.client.WriteFrame(frame)
@@ -245,6 +246,7 @@ func (s *streamFunction) onDataFrame(dataFrame *frame.DataFrame) {
 			}
 			dataFrame.Metadata = newMetadata
 			s.client.Logger().Debug("sfn metadata", "tid", tid, "sid", sid, "parentTraced", parentTraced, "traced", traced)
+			s.client.Logger().Debug("sfn", "streamed", dataFrame.Streamed)
 			serverlessCtx := serverless.NewContext(s.client, dataFrame)
 			s.fn(serverlessCtx)
 		}(tp, dataFrame)

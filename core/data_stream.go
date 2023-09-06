@@ -14,6 +14,8 @@ type StreamInfo interface {
 	Name() string
 	// ID represents the dataStream ID, the ID is an unique string.
 	ID() string
+	// StreamID represents the stream ID, the ID is an unique int64.
+	StreamID() int64
 	// StreamType represents dataStream type (Source | SFN | UpstreamZipper).
 	StreamType() StreamType
 	// Metadata returns the extra info of the application.
@@ -72,6 +74,9 @@ func (s *dataStream) WriteFrame(f frame.Frame) error  { return s.stream.WriteFra
 func (s *dataStream) ReadFrame() (frame.Frame, error) { return s.stream.ReadFrame() }
 func (s *dataStream) Close() error                    { return s.stream.Close() }
 
+func (s *dataStream) StreamID() int64             { return s.stream.StreamID() }
+func (s *dataStream) Write(p []byte) (int, error) { return s.stream.Write(p) }
+
 const (
 	// StreamTypeSource is stream type "Source".
 	// "Source" type stream sends data to "Stream Function" stream generally.
@@ -112,4 +117,11 @@ type ContextReadWriteCloser interface {
 	Context() context.Context
 	// The stream.
 	io.ReadWriteCloser
+	// Stream
+	Stream
+}
+
+// Stream represents a stream.
+type Stream interface {
+	StreamID() int64
 }

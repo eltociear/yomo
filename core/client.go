@@ -103,9 +103,6 @@ func (c *Client) runBackground(ctx context.Context, addr string, controlStream *
 	// go c.processStream(controlStream, dataStream, reconnection)
 	// TODO: Step 3
 	// 读取控制流中所有数据流, 并处理数据流
-	// for _, dataStream := range controlStream.Streams() {
-	// 	go c.processStream(dataStream, dataStream, reconnection)
-	// }
 	go c.processStream(controlStream, reconnection)
 
 	for {
@@ -258,6 +255,7 @@ func (c *Client) openDataStream(ctx context.Context, controlStream *ClientContro
 
 	err := controlStream.RequestStream(handshakeFrame)
 	if err != nil {
+		c.logger.Error("request stream error", "err", err)
 		return nil, err
 	}
 
@@ -424,4 +422,28 @@ func (c *Client) TracerProvider() oteltrace.TracerProvider {
 		return nil
 	}
 	return c.tracerProvider
+}
+
+// TODO: 考虑如何实现这个接口兼容 stream
+// Write writes data to client.
+func (c *Client) Write(p []byte) (int, error) {
+	return 0, nil
+}
+
+// RequestStream request a stream from server.
+// func (c *Client) RequestStream(ctx context.Context, addr string, reader io.Reader) (*frame.StreamFrame, error) {
+func (c *Client) RequestStream(ctx context.Context, addr string, reader io.Reader) (DataStream, error) {
+	controlStream, err := c.openControlStream(ctx, addr)
+	if err != nil {
+		c.errorfn(err)
+		return nil, err
+	}
+	c.logger.Debug("client request stream")
+	dataStream, err := c.openDataStream(c.ctx, controlStream)
+	if err != nil {
+		c.logger.Error("client request stream error", "err", err)
+		c.errorfn(err)
+		return nil, err
+	}
+	return dataStream, nil
 }

@@ -377,6 +377,7 @@ func (s *Server) handleDataFrame(c *Context) error {
 	c.Logger.Debug("sfn routing", "data_tag", c.Frame.Tag, "sfn_stream_ids", streamIDs, "connector", s.connector.Snapshot())
 
 	for _, toID := range streamIDs {
+		// TODO: 需要测试是否必须根据 ClientID 和 StreamID 来获取 Stream
 		stream, ok, err := s.connector.Get(toID)
 		if err != nil {
 			continue
@@ -388,8 +389,9 @@ func (s *Server) handleDataFrame(c *Context) error {
 
 		c.Logger.Info(
 			"routing data frame",
-			"from_stream_name", from.Name(),
-			"from_stream_id", from.ID(),
+			"from_name", from.Name(),
+			"from_id", from.ID(),
+			"from_stream_id", from.StreamID(),
 			"to_stream_name", stream.Name(),
 			"to_stream_id", toID,
 		)

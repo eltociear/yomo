@@ -2,9 +2,12 @@ package yomo
 
 import (
 	"context"
+	"fmt"
+	"io"
 
 	"github.com/yomorun/yomo/core"
 	"github.com/yomorun/yomo/core/frame"
+	"github.com/yomorun/yomo/pkg/frame-codec/y3codec"
 	"github.com/yomorun/yomo/pkg/id"
 	"github.com/yomorun/yomo/pkg/trace"
 )
@@ -23,6 +26,8 @@ type Source interface {
 	SetErrorHandler(fn func(err error))
 	// [Experimental] SetReceiveHandler set the observe handler function
 	SetReceiveHandler(fn func(tag uint32, data []byte))
+	// Pipe the data from io.Reader to YoMo-Zipper.
+	Pipe(tag uint32, stream io.Reader, broadcast bool) error
 }
 
 // YoMo-Source
@@ -132,4 +137,64 @@ func (s *yomoSource) write(tag uint32, data []byte, broadcast bool) error {
 	}
 	s.client.Logger().Debug("source write", "tag", tag, "data", data, "broadcast", broadcast)
 	return s.client.WriteFrame(f)
+}
+
+func (s *yomoSource) Pipe(tag uint32, stream io.Reader, broadcast bool) error {
+	return s.pipe(tag, stream, broadcast)
+}
+
+// Pipe the data from io.Reader to YoMo-Zipper.
+func (s *yomoSource) pipe(tag uint32, stream io.Reader, broadcast bool) error {
+	// request stream
+	dataStream, err := s.client.RequestStream(context.Background(), s.zipperAddr, stream)
+	if err != nil {
+		return err
+	}
+	// TODO: trace
+
+	// metadata
+	tid := id.TID()
+	sid := id.SID()
+	traced := true
+	md, err := core.NewDefaultMetadata(s.client.ClientID(), broadcast, tid, sid, traced).Encode()
+	if err != nil {
+		return err
+	}
+	// write frame
+	// TODO: 从服务端获取
+	buf := make([]byte, 1024)
+	streamFrame := &frame.StreamFrame{
+		ID:        dataStream.ID(),
+		StreamID:  dataStream.StreamID(),
+		ChunkSize: uint(len(buf)),
+	}
+	// TODO: 硬编码,需要修改
+	data, err := y3codec.Codec().Encode(streamFrame)
+	if err != nil {
+		return err
+	}
+	f := &frame.DataFrame{
+		Tag:      tag,
+		Metadata: md,
+		Payload:  data,
+		Streamed: true,
+	}
+	err = s.client.WriteFrame(f)
+	if err != nil {
+		s.client.Logger().Error("source write frame error", "err", err)
+		return err
+	}
+	// s.client.Logger().Debug("source pipe", "tag", tag, "data", data, "broadcast", broadcast)
+	fmt.Printf("source pipe: tag=%v, data=%+v, broadcast=%v, streamed=%v\n", tag, streamFrame, broadcast, f.Streamed)
+	// sync stream
+	_, err = io.CopyBuffer(dataStream, stream, buf)
+	if err != nil {
+		if err == io.EOF {
+			s.client.Logger().Info("source sync stream done", "stream_id", dataStream.StreamID)
+			return nil
+		}
+		s.client.Logger().Error("source sync stream error", "err", err)
+		return err
+	}
+	return nil
 }

@@ -2,6 +2,8 @@
 package serverless
 
 import (
+	"io"
+
 	"github.com/yomorun/yomo/core/frame"
 )
 
@@ -42,4 +44,15 @@ func (c *Context) Write(tag uint32, data []byte) error {
 	}
 
 	return c.writer.WriteFrame(dataFrame)
+}
+
+// Streamed returns whether the data is streamed.
+func (c *Context) Streamed() bool {
+	return c.dataFrame.Streamed
+}
+
+// Stream returns the stream.
+func (c *Context) Stream() io.Reader {
+	// TODO: 读取 payload 中的数据, 构建 io.Reader
+	return nil
 }

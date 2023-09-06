@@ -86,15 +86,38 @@ func (qc *QuicConnection) RemoteAddr() string {
 
 // OpenStream opens a new bidirectional QUIC stream.
 func (qc *QuicConnection) OpenStream() (ContextReadWriteCloser, error) {
-	return qc.conn.OpenStream()
+	// return qc.conn.OpenStream()
+	quicStream, err := qc.conn.OpenStream()
+	if err != nil {
+		return nil, err
+	}
+	return wrappeStream(quicStream), nil
 }
 
 // AcceptStream returns the next stream opened by the peer, blocking until one is available.
 func (qc *QuicConnection) AcceptStream(ctx context.Context) (ContextReadWriteCloser, error) {
-	return qc.conn.AcceptStream(ctx)
+	// return qc.conn.AcceptStream(ctx)
+	quicStream, err := qc.conn.AcceptStream(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return wrappeStream(quicStream), nil
 }
 
 // CloseWithError closes the connection with an error string.
 func (qc *QuicConnection) CloseWithError(errString string) error {
 	return qc.conn.CloseWithError(YomoCloseErrorCode, errString)
+}
+
+type quicStreamWrapper struct {
+	quic.Stream
+}
+
+func (s *quicStreamWrapper) StreamID() int64 {
+	return int64(s.Stream.StreamID())
+}
+
+// wrappeStream wraps quic.Stream to ContextReadWriteCloser.
+func wrappeStream(quicStream quic.Stream) ContextReadWriteCloser {
+	return &quicStreamWrapper{quicStream}
 }

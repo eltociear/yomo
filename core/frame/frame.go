@@ -60,6 +60,8 @@ type DataFrame struct {
 	Tag Tag
 	// Payload is the data to transmit.
 	Payload []byte
+	// Streamed is the flag of stream.
+	Streamed bool
 }
 
 // Type returns the type of DataFrame.
@@ -87,6 +89,10 @@ func (f *HandshakeFrame) Type() Type { return TypeHandshakeFrame }
 // HandshakeAckFrame is used to ack handshake, If handshake successful, The server will
 // send HandshakeAckFrame to the new DataStream, That means the initial frame received by the new DataStream must be the HandshakeAckFrame.
 type HandshakeAckFrame struct {
+	// ClientID is the ID of client.
+	// ClientID string
+	// StreamID is the ID of DataStream be created.
+	// StringID int64
 	StreamID string
 }
 
@@ -129,7 +135,8 @@ func (f *RejectedFrame) Type() Type { return TypeRejectedFrame }
 
 // StreamFrame is used to transmit data across DataStream.
 type StreamFrame struct {
-	StreamID  string
+	ID        string
+	StreamID  int64
 	ChunkSize uint
 }
 
@@ -145,7 +152,7 @@ const (
 	TypeHandshakeAckFrame      Type = 0x29 // TypeHandshakeAckFrame is the type of HandshakeAckFrame.
 	TypeRejectedFrame          Type = 0x39 // TypeRejectedFrame is the type of RejectedFrame.
 	TypeBackflowFrame          Type = 0x2D // TypeBackflowFrame is the type of BackflowFrame.
-	TypeStreamFrame            Type = 0x40 // TypeStreamFrame is the type of StreamFrame.
+	TypeStreamFrame            Type = 0x30 // TypeStreamFrame is the type of StreamFrame.
 )
 
 var frameTypeStringMap = map[Type]string{
@@ -227,6 +234,7 @@ type ReadWriter interface {
 type Writer interface {
 	// WriteFrame writes frame to underlying stream.
 	WriteFrame(Frame) error
+	io.Writer
 }
 
 // Reader reads frame from underlying stream.

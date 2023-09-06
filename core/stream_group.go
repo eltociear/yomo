@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 
 	"github.com/yomorun/yomo/core/frame"
@@ -86,12 +87,14 @@ type handshakeResult struct {
 // It takes route parameter, which will be assigned after the returned function is executed.
 func (g *StreamGroup) makeHandshakeFunc(result *handshakeResult) func(hf *frame.HandshakeFrame) (metadata.M, error) {
 	return func(hf *frame.HandshakeFrame) (metadata.M, error) {
+		// _, ok, err := g.connector.Get(hf.ID)
 		_, ok, err := g.connector.Get(hf.ID)
 		if err != nil {
 			return metadata.M{}, err
 		}
 		if ok {
-			return metadata.M{}, errors.New("yomo: stream id is not allowed to be a duplicate")
+			// return metadata.M{}, fmt.Errorf("yomo: stream id[%s] is not allowed to be a duplicate", hf.ID)
+			g.logger.Info("client is exists", "client_id", hf.ID)
 		}
 
 		md, err := metadata.Decode(hf.Metadata)
@@ -110,7 +113,7 @@ func (g *StreamGroup) makeHandshakeFunc(result *handshakeResult) func(hf *frame.
 			return metadata.M{}, err
 		}
 		result.route = route
-
+		// BUG: 这里应该返回 md
 		return metadata.M{}, err
 	}
 }
@@ -126,11 +129,13 @@ func (g *StreamGroup) Run(contextFunc func(c *Context)) error {
 
 		stream, err := g.controlStream.OpenStream(g.ctx, handshakeFunc)
 		if err != nil {
+			g.logger.Error("control stream open stream error", "err", err)
 			return err
 		}
 
 		g.group.Add(1)
 		g.connector.Store(stream.ID(), stream)
+		// g.connector.Store(StreamKey(stream.ID(), stream.StreamID()), stream)
 		g.logger.Debug("connector add stream", "stream_id", stream.ID(), "stream_type", stream.StreamType().String(), "stream_name", stream.Name())
 
 		go g.handleContextFunc(routeResult.route, stream, contextFunc)
@@ -156,3 +161,8 @@ func (g *StreamGroup) handleContextFunc(route router.Route, stream DataStream, c
 
 // Wait waits all dataStream down.
 func (g *StreamGroup) Wait() { g.group.Wait() }
+
+// StreamKey returns the key of stream.
+func StreamKey(clientID string, streamID int64) string {
+	return fmt.Sprintf("%s|%d", clientID, streamID)
+}

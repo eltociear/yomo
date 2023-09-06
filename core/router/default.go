@@ -50,6 +50,7 @@ func newRoute(functions []config.Function) *defaultRoute {
 	}
 }
 
+// TODO: 需要增加 StreamID,获取指定流, 或者直接增加 metadata 参数
 func (r *defaultRoute) Add(connID string, name string, observeDataTags []frame.Tag) (err error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()

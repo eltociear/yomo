@@ -86,3 +86,11 @@ func (fs *FrameStream) Close() error {
 
 	return fs.underlying.Close()
 }
+
+func (fs *FrameStream) StreamID() int64 {
+	return fs.underlying.StreamID()
+}
+
+func (fs *FrameStream) Write(p []byte) (int, error) {
+	return fs.underlying.Write(p)
+}
