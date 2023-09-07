@@ -77,8 +77,8 @@ type HandshakeFrame struct {
 	ID string
 	// ClientID is the ID of client.
 	ClientID string
-	// StreamType is the StreamType of the dataStream that will be created.
-	StreamType byte
+	// ClientType is the StreamType of the dataStream that will be created.
+	ClientType byte
 	// ObserveDataTags is the ObserveDataTags of the dataStream that will be created.
 	ObserveDataTags []Tag
 	// Metadata is the Metadata of the dataStream that will be created.

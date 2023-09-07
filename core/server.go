@@ -135,7 +135,7 @@ func (s *Server) Serve(ctx context.Context, conn net.PacketConn) error {
 			s.logger.Error("accepted an error when accepting a connection", "err", err)
 			return err
 		}
-		logger := s.logger.With("remote_addr", conn.RemoteAddr(), "local_addr", conn.LocalAddr())
+		logger := s.logger.With("remote_addr", conn.RemoteAddr())
 
 		stream0, err := conn.AcceptStream(ctx)
 		if err != nil {
@@ -247,6 +247,8 @@ func (s *Server) handleStreamContext(c *Context) {
 			}
 			// any error occurred, we should close the stream
 			// after this, conn.AcceptStream() will raise the error
+			// TODO: 查找服务端关闭流的原因
+			// 日志增加 stream_id
 			c.CloseWithError(err.Error())
 			c.Logger.Debug("connection closed")
 			break
@@ -433,7 +435,7 @@ func sourceIDTagFindStreamFunc(sourceID string, tag frame.Tag) FindStreamFunc {
 	return func(stream StreamInfo) bool {
 		for _, v := range stream.ObserveDataTags() {
 			if v == tag &&
-				stream.StreamType() == StreamTypeSource &&
+				stream.ClientType() == ClientTypeSource &&
 				stream.ID() == sourceID {
 				return true
 			}
@@ -482,7 +484,7 @@ func (s *Server) AddDownstreamServer(addr string, c FrameWriterConnection) {
 
 // dispatch every DataFrames to all downstreams
 func (s *Server) dispatchToDownstreams(c *Context) {
-	if c.DataStream.StreamType() == StreamTypeSource {
+	if c.DataStream.ClientType() == ClientTypeSource {
 		var (
 			broadcast = GetBroadcastFromMetadata(c.FrameMetadata)
 			tid       = GetTIDFromMetadata(c.FrameMetadata)

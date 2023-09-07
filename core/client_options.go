@@ -112,16 +112,35 @@ func WithTracerProvider(tp trace.TracerProvider) ClientOption {
 	}
 }
 
-// ClientType is equal to StreamType.
-type ClientType = StreamType
+// ClientType represents client type (Source | SFN | UpstreamZipper).
+type ClientType byte
 
 const (
-	// ClientTypeSource is equal to StreamTypeSource.
-	ClientTypeSource ClientType = StreamTypeSource
+	// ClientTypeSource is Client type "Source".
+	// "Source" type stream sends data to "Stream Function" stream generally.
+	ClientTypeSource ClientType = 0x5F
 
-	// ClientTypeUpstreamZipper is equal to StreamTypeUpstreamZipper.
-	ClientTypeUpstreamZipper ClientType = StreamTypeUpstreamZipper
+	// ClientTypeUpstreamZipper is connection type "Upstream Zipper".
+	// "Upstream Zipper" type stream sends data from "Source" to other zipper node.
+	// With "Upstream Zipper", the yomo can run in mesh mode.
+	ClientTypeUpstreamZipper ClientType = 0x5E
 
-	// ClientTypeStreamFunction is equal to StreamTypeStreamFunction.
-	ClientTypeStreamFunction ClientType = StreamTypeStreamFunction
+	// ClientTypeStreamFunction is stream type "Stream Function".
+	// "Stream Function" handles data from source.
+	ClientTypeStreamFunction ClientType = 0x5D
 )
+
+var clientTypeStringMap = map[ClientType]string{
+	ClientTypeSource:         "Source",
+	ClientTypeUpstreamZipper: "UpstreamZipper",
+	ClientTypeStreamFunction: "StreamFunction",
+}
+
+// String returns string for StreamType.
+func (c ClientType) String() string {
+	str, ok := clientTypeStringMap[c]
+	if !ok {
+		return "Unknown"
+	}
+	return str
+}

@@ -16,8 +16,8 @@ type StreamInfo interface {
 	ID() string
 	// StreamID represents the stream ID, the ID is an unique int64.
 	StreamID() int64
-	// StreamType represents dataStream type (Source | SFN | UpstreamZipper).
-	StreamType() StreamType
+	// ClientType represents client type (Source | SFN | UpstreamZipper).
+	ClientType() ClientType
 	// Metadata returns the extra info of the application.
 	// The metadata is a merged set of data from both the handshake and authentication processes.
 	Metadata() metadata.M
@@ -37,7 +37,7 @@ type DataStream interface {
 type dataStream struct {
 	name       string
 	id         string
-	streamType StreamType
+	clientType ClientType
 	metadata   metadata.M
 	observed   []frame.Tag
 
@@ -48,7 +48,7 @@ type dataStream struct {
 func newDataStream(
 	name string,
 	id string,
-	streamType StreamType,
+	clientType ClientType,
 	metadata metadata.M,
 	observed []frame.Tag,
 	stream *FrameStream,
@@ -56,7 +56,7 @@ func newDataStream(
 	return &dataStream{
 		name:       name,
 		id:         id,
-		streamType: streamType,
+		clientType: clientType,
 		metadata:   metadata,
 		observed:   observed,
 		stream:     stream,
@@ -68,7 +68,7 @@ func (s *dataStream) Context() context.Context        { return s.stream.Context(
 func (s *dataStream) ID() string                      { return s.id }
 func (s *dataStream) Name() string                    { return s.name }
 func (s *dataStream) Metadata() metadata.M            { return s.metadata }
-func (s *dataStream) StreamType() StreamType          { return s.streamType }
+func (s *dataStream) ClientType() ClientType          { return s.clientType }
 func (s *dataStream) ObserveDataTags() []frame.Tag    { return s.observed }
 func (s *dataStream) WriteFrame(f frame.Frame) error  { return s.stream.WriteFrame(f) }
 func (s *dataStream) ReadFrame() (frame.Frame, error) { return s.stream.ReadFrame() }
@@ -76,39 +76,6 @@ func (s *dataStream) Close() error                    { return s.stream.Close() 
 
 func (s *dataStream) StreamID() int64             { return s.stream.StreamID() }
 func (s *dataStream) Write(p []byte) (int, error) { return s.stream.Write(p) }
-
-const (
-	// StreamTypeSource is stream type "Source".
-	// "Source" type stream sends data to "Stream Function" stream generally.
-	StreamTypeSource StreamType = 0x5F
-
-	// StreamTypeUpstreamZipper is connection type "Upstream Zipper".
-	// "Upstream Zipper" type stream sends data from "Source" to other zipper node.
-	// With "Upstream Zipper", the yomo can run in mesh mode.
-	StreamTypeUpstreamZipper StreamType = 0x5E
-
-	// StreamTypeStreamFunction is stream type "Stream Function".
-	// "Stream Function" handles data from source.
-	StreamTypeStreamFunction StreamType = 0x5D
-)
-
-// StreamType represents the stream type.
-type StreamType byte
-
-var streamTypeStringMap = map[StreamType]string{
-	StreamTypeSource:         "Source",
-	StreamTypeUpstreamZipper: "UpstreamZipper",
-	StreamTypeStreamFunction: "StreamFunction",
-}
-
-// String returns string for StreamType.
-func (c StreamType) String() string {
-	str, ok := streamTypeStringMap[c]
-	if !ok {
-		return "Unknown"
-	}
-	return str
-}
 
 // ContextReadWriteCloser represents a stream which its lifecycle managed by context.
 // The context should be closed when the stream is closed.

@@ -17,10 +17,10 @@ func encodeHandshakeFrame(f *frame.HandshakeFrame) ([]byte, error) {
 	idBlock.SetStringValue(f.ID)
 	// ClientID
 	clientIDBlock := y3.NewPrimitivePacketEncoder(tagHandshakeClientID)
-	clientIDBlock.SetStringValue(f.ID)
+	clientIDBlock.SetStringValue(f.ClientID)
 	// stream type
-	typeBlock := y3.NewPrimitivePacketEncoder(tagHandshakeStreamType)
-	typeBlock.SetBytesValue([]byte{f.StreamType})
+	typeBlock := y3.NewPrimitivePacketEncoder(tagHandshakeClientType)
+	typeBlock.SetBytesValue([]byte{f.ClientType})
 	// observe data tags
 	observeDataTagsBlock := y3.NewPrimitivePacketEncoder(tagHandshakeObserveDataTags)
 	buf := make([]byte, 4)
@@ -76,9 +76,9 @@ func decodeHandshakeFrame(data []byte, f *frame.HandshakeFrame) error {
 		f.ClientID = clientID
 	}
 	// stream type
-	if typeBlock, ok := node.PrimitivePackets[byte(tagHandshakeStreamType)]; ok {
-		streamType := typeBlock.ToBytes()
-		f.StreamType = streamType[0]
+	if typeBlock, ok := node.PrimitivePackets[byte(tagHandshakeClientType)]; ok {
+		clientType := typeBlock.ToBytes()
+		f.ClientType = clientType[0]
 	}
 	// observe data tag list
 	if observeDataTagsBlock, ok := node.PrimitivePackets[byte(tagHandshakeObserveDataTags)]; ok {
@@ -100,7 +100,7 @@ func decodeHandshakeFrame(data []byte, f *frame.HandshakeFrame) error {
 
 var (
 	tagHandshakeName            byte = 0x01
-	tagHandshakeStreamType      byte = 0x02
+	tagHandshakeClientType      byte = 0x02
 	tagHandshakeID              byte = 0x03
 	tagHandshakeClientID        byte = 0x04
 	tagHandshakeObserveDataTags byte = 0x06

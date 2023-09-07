@@ -17,9 +17,9 @@ type Router interface {
 // Route manages data subscribers according to their observed data tags.
 type Route interface {
 	// Add a route.
-	Add(clientID string, name string, observeDataTags []frame.Tag) error
+	Add(id string, name string, observeDataTags []frame.Tag) error
 	// Remove a route.
-	Remove(clientID string) error
+	Remove(id string) error
 	// GetForwardRoutes returns all the subscribers by the given data tag.
 	GetForwardRoutes(tag frame.Tag) (streamIDs []string)
 }
