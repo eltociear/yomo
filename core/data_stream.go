@@ -16,6 +16,8 @@ type StreamInfo interface {
 	ID() string
 	// StreamID represents the stream ID, the ID is an unique int64.
 	StreamID() int64
+	// ClientID represents the client ID, the ID is an unique string.
+	ClientID() string
 	// ClientType represents client type (Source | SFN | UpstreamZipper).
 	ClientType() ClientType
 	// Metadata returns the extra info of the application.
@@ -37,6 +39,7 @@ type DataStream interface {
 type dataStream struct {
 	name       string
 	id         string
+	clientID   string
 	clientType ClientType
 	metadata   metadata.M
 	observed   []frame.Tag
@@ -48,6 +51,7 @@ type dataStream struct {
 func newDataStream(
 	name string,
 	id string,
+	clientID string,
 	clientType ClientType,
 	metadata metadata.M,
 	observed []frame.Tag,
@@ -56,6 +60,7 @@ func newDataStream(
 	return &dataStream{
 		name:       name,
 		id:         id,
+		clientID:   clientID,
 		clientType: clientType,
 		metadata:   metadata,
 		observed:   observed,
@@ -68,6 +73,7 @@ func (s *dataStream) Context() context.Context        { return s.stream.Context(
 func (s *dataStream) ID() string                      { return s.id }
 func (s *dataStream) Name() string                    { return s.name }
 func (s *dataStream) Metadata() metadata.M            { return s.metadata }
+func (s *dataStream) ClientID() string                { return s.clientID }
 func (s *dataStream) ClientType() ClientType          { return s.clientType }
 func (s *dataStream) ObserveDataTags() []frame.Tag    { return s.observed }
 func (s *dataStream) WriteFrame(f frame.Frame) error  { return s.stream.WriteFrame(f) }

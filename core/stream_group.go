@@ -132,7 +132,7 @@ func (g *StreamGroup) Run(contextFunc func(c *Context)) error {
 		}
 		g.group.Add(1)
 		g.connector.Store(stream.ID(), stream)
-		g.logger.Debug("connector add stream", "datastream_id", stream.ID(), "stream_id", stream.StreamID(), "client_type", stream.ClientType().String(), "name", stream.Name())
+		g.logger.Debug("connector add stream", "datastream_id", stream.ID(), "stream_id", stream.StreamID(), "client_id", stream.ClientID(), "client_type", stream.ClientType().String(), "name", stream.Name())
 
 		go g.handleContextFunc(routeResult.route, stream, contextFunc)
 	}
@@ -145,7 +145,7 @@ func (g *StreamGroup) handleContextFunc(route router.Route, stream DataStream, c
 			route.Remove(stream.ID())
 		}
 		g.connector.Delete(stream.ID())
-		g.logger.Debug("connector remove stream", "datastream_id", stream.ID(), "stream_id", stream.StreamID(), "client_type", stream.ClientType().String(), "name", stream.Name())
+		g.logger.Debug("connector remove stream", "datastream_id", stream.ID(), "stream_id", stream.StreamID(), "client_id", stream.ClientID(), "client_type", stream.ClientType().String(), "name", stream.Name())
 		g.group.Done()
 	}()
 

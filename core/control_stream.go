@@ -131,6 +131,7 @@ func (ss *ServerControlStream) OpenStream(ctx context.Context, handshakeFunc Han
 	dataStream := newDataStream(
 		ff.Name,
 		ff.ID,
+		ff.ClientID,
 		ClientType(ff.ClientType),
 		md,
 		ff.ObserveDataTags,
@@ -415,7 +416,7 @@ func (cs *ClientControlStream) acceptStream(ctx context.Context) (DataStream, er
 		return nil, err
 	}
 
-	return newDataStream(f.Name, f.ID, ClientType(f.ClientType), md, f.ObserveDataTags, fs), nil
+	return newDataStream(f.Name, f.ID, f.ClientID, ClientType(f.ClientType), md, f.ObserveDataTags, fs), nil
 }
 
 // CloseWithError closes the client-side control stream.

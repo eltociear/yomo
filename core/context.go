@@ -101,6 +101,7 @@ func newContext(dataStream DataStream, route router.Route, logger *slog.Logger) 
 		"datastream_id", dataStream.ID(),
 		"stream_id", dataStream.StreamID(),
 		"name", dataStream.Name(),
+		"client_id", dataStream.ClientID(),
 		"client_type", dataStream.ClientType().String(),
 	)
 
