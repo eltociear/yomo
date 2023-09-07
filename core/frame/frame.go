@@ -75,6 +75,8 @@ type HandshakeFrame struct {
 	Name string
 	// ID is the ID of the dataStream that will be created.
 	ID string
+	// ClientID is the ID of client.
+	ClientID string
 	// StreamType is the StreamType of the dataStream that will be created.
 	StreamType byte
 	// ObserveDataTags is the ObserveDataTags of the dataStream that will be created.
@@ -90,10 +92,11 @@ func (f *HandshakeFrame) Type() Type { return TypeHandshakeFrame }
 // send HandshakeAckFrame to the new DataStream, That means the initial frame received by the new DataStream must be the HandshakeAckFrame.
 type HandshakeAckFrame struct {
 	// ClientID is the ID of client.
-	// ClientID string
-	// StreamID is the ID of DataStream be created.
-	// StringID int64
-	StreamID string
+	ClientID string
+	// ID is the ID of DataStream be created.
+	ID string
+	// StreamID is the ID of DataStream be created from server.
+	StreamID int64
 }
 
 // Type returns the type of HandshakeAckFrame.

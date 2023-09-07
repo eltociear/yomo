@@ -8,7 +8,9 @@ import (
 	"io"
 	"reflect"
 	"runtime"
+	"sync/atomic"
 	"time"
+	"unsafe"
 
 	"github.com/yomorun/yomo/core/frame"
 	"github.com/yomorun/yomo/pkg/frame-codec/y3codec"
@@ -35,6 +37,8 @@ type Client struct {
 	ctxCancel context.CancelFunc
 
 	writeFrameChan chan frame.Frame
+	// control stream
+	controlStream *ClientControlStream
 }
 
 // NewClient creates a new YoMo-Client.
@@ -89,7 +93,11 @@ connect:
 		c.logger.Error("can not connect to zipper", "error", err)
 		return err
 	}
+	c.logger = c.logger.With("local_addr", controlStream.Conn().LocalAddr())
 	c.logger.Info("connected to zipper")
+
+	// set control stream
+	c.setControlStream(controlStream)
 
 	// TODO: Step 2
 	// go c.runBackground(ctx, addr, controlStream, dataStream)
@@ -101,6 +109,8 @@ connect:
 func (c *Client) runBackground(ctx context.Context, addr string, controlStream *ClientControlStream) {
 	reconnection := make(chan struct{})
 	// go c.processStream(controlStream, dataStream, reconnection)
+	// 使用控制流处理数据流
+	controlStream = c.ControlStream()
 	// TODO: Step 3
 	// 读取控制流中所有数据流, 并处理数据流
 	go c.processStream(controlStream, reconnection)
@@ -129,6 +139,7 @@ func (c *Client) runBackground(ctx context.Context, addr string, controlStream *
 				goto reconnect
 			}
 			// go c.processStream(controlStream, dataStream, reconnection)
+			c.setControlStream(controlStream)
 			go c.processStream(controlStream, reconnection)
 		}
 	}
@@ -248,7 +259,8 @@ func (c *Client) openControlStream(ctx context.Context, addr string) (*ClientCon
 func (c *Client) openDataStream(ctx context.Context, controlStream *ClientControlStream) (DataStream, error) {
 	handshakeFrame := &frame.HandshakeFrame{
 		Name:            c.name,
-		ID:              c.clientID,
+		ID:              id.New(),
+		ClientID:        c.clientID,
 		StreamType:      byte(c.streamType),
 		ObserveDataTags: c.opts.observeDataTags,
 	}
@@ -433,17 +445,32 @@ func (c *Client) Write(p []byte) (int, error) {
 // RequestStream request a stream from server.
 // func (c *Client) RequestStream(ctx context.Context, addr string, reader io.Reader) (*frame.StreamFrame, error) {
 func (c *Client) RequestStream(ctx context.Context, addr string, reader io.Reader) (DataStream, error) {
-	controlStream, err := c.openControlStream(ctx, addr)
-	if err != nil {
-		c.errorfn(err)
-		return nil, err
-	}
+	// controlStream, err := c.openControlStream(ctx, addr)
+	// if err != nil {
+	// 	c.errorfn(err)
+	// 	return nil, err
+	// }
 	c.logger.Debug("client request stream")
-	dataStream, err := c.openDataStream(c.ctx, controlStream)
+	dataStream, err := c.openDataStream(c.ctx, c.ControlStream())
 	if err != nil {
+		if err == io.EOF {
+			c.logger.Info("client request stream EOF")
+			dataStream.Close()
+			return nil, err
+		}
 		c.logger.Error("client request stream error", "err", err)
 		c.errorfn(err)
 		return nil, err
 	}
 	return dataStream, nil
+}
+
+// ControlStream returns the control stream of client.
+func (c *Client) ControlStream() *ClientControlStream {
+	return (*ClientControlStream)(atomic.LoadPointer((*unsafe.Pointer)(unsafe.Pointer(&c.controlStream))))
+}
+
+// setControlStream sets the control stream of client.
+func (c *Client) setControlStream(controlStream *ClientControlStream) {
+	atomic.StorePointer((*unsafe.Pointer)(unsafe.Pointer(&c.controlStream)), unsafe.Pointer(controlStream))
 }

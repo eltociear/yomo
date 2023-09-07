@@ -88,13 +88,13 @@ type handshakeResult struct {
 func (g *StreamGroup) makeHandshakeFunc(result *handshakeResult) func(hf *frame.HandshakeFrame) (metadata.M, error) {
 	return func(hf *frame.HandshakeFrame) (metadata.M, error) {
 		// _, ok, err := g.connector.Get(hf.ID)
-		_, ok, err := g.connector.Get(hf.ID)
+		_, ok, err := g.connector.Get(hf.ClientID)
 		if err != nil {
 			return metadata.M{}, err
 		}
 		if ok {
 			// return metadata.M{}, fmt.Errorf("yomo: stream id[%s] is not allowed to be a duplicate", hf.ID)
-			g.logger.Info("client is exists", "client_id", hf.ID)
+			g.logger.Info("client is exists", "client_id", hf.ClientID)
 		}
 
 		md, err := metadata.Decode(hf.Metadata)

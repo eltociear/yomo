@@ -191,7 +191,8 @@ func (s *yomoSource) pipe(tag uint32, stream io.Reader, broadcast bool) error {
 	if err != nil {
 		if err == io.EOF {
 			s.client.Logger().Info("source sync stream done", "stream_id", dataStream.StreamID)
-			return nil
+			// return nil
+			return err
 		}
 		s.client.Logger().Error("source sync stream error", "err", err)
 		return err

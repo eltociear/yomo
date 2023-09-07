@@ -8,10 +8,18 @@ import (
 // encodeHandshakeAckFrame encodes HandshakeAckFrame to Y3 encoded bytes.
 func encodeHandshakeAckFrame(f *frame.HandshakeAckFrame) ([]byte, error) {
 	ack := y3.NewNodePacketEncoder(byte(f.Type()))
+	// ID
+	idBlock := y3.NewPrimitivePacketEncoder(tagHandshakeAckID)
+	idBlock.SetStringValue(f.ID)
+	// client ID
+	clientIDBlock := y3.NewPrimitivePacketEncoder(tagHandshakeAckClientID)
+	clientIDBlock.SetStringValue(f.ClientID)
 	// streamID
 	streamIDBlock := y3.NewPrimitivePacketEncoder(tagHandshakeAckStreamID)
-	streamIDBlock.SetStringValue(f.StreamID)
+	streamIDBlock.SetInt64Value(f.StreamID)
 
+	ack.AddPrimitivePacket(idBlock)
+	ack.AddPrimitivePacket(clientIDBlock)
 	ack.AddPrimitivePacket(streamIDBlock)
 
 	return ack.Encode(), nil
@@ -24,10 +32,25 @@ func decodeHandshakeAckFrame(data []byte, f *frame.HandshakeAckFrame) error {
 	if err != nil {
 		return err
 	}
-
+	// ID
+	if idBlock, ok := node.PrimitivePackets[tagHandshakeAckID]; ok {
+		id, err := idBlock.ToUTF8String()
+		if err != nil {
+			return err
+		}
+		f.ID = id
+	}
+	// client ID
+	if clientIDBlock, ok := node.PrimitivePackets[tagHandshakeAckClientID]; ok {
+		clientID, err := clientIDBlock.ToUTF8String()
+		if err != nil {
+			return err
+		}
+		f.ClientID = clientID
+	}
 	// streamID
 	if streamIDBlock, ok := node.PrimitivePackets[tagHandshakeAckStreamID]; ok {
-		streamID, err := streamIDBlock.ToUTF8String()
+		streamID, err := streamIDBlock.ToInt64()
 		if err != nil {
 			return err
 		}
@@ -36,4 +59,8 @@ func decodeHandshakeAckFrame(data []byte, f *frame.HandshakeAckFrame) error {
 	return nil
 }
 
-var tagHandshakeAckStreamID byte = 0x28
+var (
+	tagHandshakeAckID       byte = 0x26
+	tagHandshakeAckClientID byte = 0x27
+	tagHandshakeAckStreamID byte = 0x28
+)

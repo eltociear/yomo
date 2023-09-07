@@ -117,9 +117,9 @@ func (ss *ServerControlStream) OpenStream(ctx context.Context, handshakeFunc Han
 		return nil, err
 	}
 	b, err := ss.codec.Encode(&frame.HandshakeAckFrame{
-		StreamID: ff.ID,
-		// TODO: 要不要加 StreamID ?
-
+		ID:       ff.ID,
+		ClientID: ff.ClientID,
+		StreamID: stream.StreamID(),
 	})
 	if err != nil {
 		return nil, err
@@ -290,18 +290,18 @@ func (cs *ClientControlStream) Authenticate(cred *auth.Credential) error {
 }
 
 // ackDataStream drain HandshakeAckFrame from the Reader and return streamID and error.
-func ackDataStream(stream frame.Reader) (string, error) {
+func ackDataStream(stream frame.Reader) (string, int64, error) {
 	first, err := stream.ReadFrame()
 	if err != nil {
-		return "", err
+		return "", 0, err
 	}
 
 	f, ok := first.(*frame.HandshakeAckFrame)
 	if !ok {
-		return "", fmt.Errorf("yomo: data stream read first frame should be HandshakeAckFrame, but got %s", first.Type().String())
+		return "", 0, fmt.Errorf("yomo: data stream read first frame should be HandshakeAckFrame, but got %s", first.Type().String())
 	}
 
-	return f.StreamID, nil
+	return f.ID, f.StreamID, nil
 }
 
 // RequestStream sends a HandshakeFrame to the server's control stream to request a new data stream.
@@ -392,7 +392,7 @@ func (cs *ClientControlStream) acceptStream(ctx context.Context) (DataStream, er
 
 	fs := NewFrameStream(quicStream, cs.codec, cs.packetReadWriter)
 
-	streamID, err := ackDataStream(fs)
+	id, _, err := ackDataStream(fs)
 	if err != nil {
 		cs.logger.Error("client ack data stream error", "error", err)
 		return nil, err
@@ -401,7 +401,7 @@ func (cs *ClientControlStream) acceptStream(ctx context.Context) (DataStream, er
 	cs.mu.Lock()
 	defer cs.mu.Unlock()
 
-	f, ok := cs.handshakeFrames[streamID]
+	f, ok := cs.handshakeFrames[id]
 	if !ok {
 		return nil, errors.New("yomo: client control stream accept stream without send handshake")
 	}
@@ -421,4 +421,9 @@ func (cs *ClientControlStream) acceptStream(ctx context.Context) (DataStream, er
 func (cs *ClientControlStream) CloseWithError(errString string) error {
 	cs.stream.Close()
 	return cs.conn.CloseWithError(errString)
+}
+
+// Conn returns the Connection of the control stream.
+func (cs *ClientControlStream) Conn() Connection {
+	return cs.conn
 }
