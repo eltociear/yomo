@@ -73,7 +73,7 @@ func (g *StreamGroup) handleRoute(hf *frame.HandshakeFrame, md metadata.M) (rout
 		if ok {
 			stream.Close()
 			g.connector.Delete(existsStreamID)
-			g.logger.Debug("connector remove stream", "id", stream.ID(), "client_type", stream.ClientType().String(), "name", stream.Name())
+			g.logger.Debug("connector remove stream", "datastream_id", stream.ID(), "client_type", stream.ClientType().String(), "name", stream.Name())
 		}
 	}
 	return route, nil
@@ -92,7 +92,7 @@ func (g *StreamGroup) makeHandshakeFunc(result *handshakeResult) func(hf *frame.
 			return metadata.M{}, err
 		}
 		if ok {
-			return metadata.M{}, fmt.Errorf("yomo: stream id[%s] is not allowed to be a duplicate", hf.ID)
+			return metadata.M{}, fmt.Errorf("yomo: data stream id[%s] is not allowed to be a duplicate", hf.ID)
 		}
 
 		md, err := metadata.Decode(hf.Metadata)
@@ -132,7 +132,7 @@ func (g *StreamGroup) Run(contextFunc func(c *Context)) error {
 		}
 		g.group.Add(1)
 		g.connector.Store(stream.ID(), stream)
-		g.logger.Debug("connector add stream", "id", stream.ID(), "stream_id", stream.StreamID(), "client_type", stream.ClientType().String(), "name", stream.Name())
+		g.logger.Debug("connector add stream", "datastream_id", stream.ID(), "stream_id", stream.StreamID(), "client_type", stream.ClientType().String(), "name", stream.Name())
 
 		go g.handleContextFunc(routeResult.route, stream, contextFunc)
 	}
@@ -145,7 +145,7 @@ func (g *StreamGroup) handleContextFunc(route router.Route, stream DataStream, c
 			route.Remove(stream.ID())
 		}
 		g.connector.Delete(stream.ID())
-		g.logger.Debug("connector remove stream", "id", stream.ID(), "stream_id", stream.StreamID(), "client_type", stream.ClientType().String(), "name", stream.Name())
+		g.logger.Debug("connector remove stream", "datastream_id", stream.ID(), "stream_id", stream.StreamID(), "client_type", stream.ClientType().String(), "name", stream.Name())
 		g.group.Done()
 	}()
 

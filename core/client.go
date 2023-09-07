@@ -450,19 +450,19 @@ func (c *Client) RequestStream(ctx context.Context, addr string, reader io.Reade
 	// 	c.errorfn(err)
 	// 	return nil, err
 	// }
-	c.logger.Debug("client request stream")
+	c.logger.Debug("client request data stream")
 	dataStream, err := c.openDataStream(c.ctx, c.ControlStream())
 	if err != nil {
 		if err == io.EOF {
-			c.logger.Info("client request stream EOF")
+			c.logger.Info("client request data stream EOF")
 			dataStream.Close()
 			return nil, err
 		}
-		c.logger.Error("client request stream error", "err", err)
+		c.logger.Error("client request data stream error", "err", err)
 		c.errorfn(err)
 		return nil, err
 	}
-	c.logger.Info("client request stream success", "id", dataStream.ID(), "stream_id", dataStream.StreamID())
+	c.logger.Info("client request data stream success", "datastream_id", dataStream.ID(), "stream_id", dataStream.StreamID())
 	return dataStream, nil
 }
 

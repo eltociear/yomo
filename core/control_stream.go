@@ -348,16 +348,16 @@ func (cs *ClientControlStream) AcceptStream(ctx context.Context) (DataStream, er
 		}
 	case result, ok := <-cs.acceptStreamResultChan:
 		if !ok {
-			cs.logger.Warn("acceptStreamResultChan closed")
+			cs.logger.Warn("accept data stream closed")
 			return nil, ErrControllerClosed
 		}
 		if err := result.err; err != nil {
-			cs.logger.Error("acceptStreamResultChan return error", "error", err)
+			cs.logger.Error("accept data stream error", "error", err)
 			return nil, err
 		}
 		cs.logger.Debug(
-			"acceptStreamResultChan return stream",
-			"id", result.stream.ID(),
+			"accept data stream",
+			"datastream_id", result.stream.ID(),
 			"stream_id", result.stream.StreamID(),
 		)
 
@@ -387,7 +387,7 @@ func (cs *ClientControlStream) acceptStreamLoop(ctx context.Context) {
 func (cs *ClientControlStream) acceptStream(ctx context.Context) (DataStream, error) {
 	quicStream, err := cs.conn.AcceptStream(ctx)
 	if err != nil {
-		cs.logger.Error("client accept stream error", "error", err)
+		cs.logger.Error("client accept data stream error", "error", err)
 		return nil, err
 	}
 

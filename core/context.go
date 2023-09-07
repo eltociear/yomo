@@ -98,7 +98,7 @@ func newContext(dataStream DataStream, route router.Route, logger *slog.Logger) 
 	}
 
 	logger = logger.With(
-		"id", dataStream.ID(),
+		"datastream_id", dataStream.ID(),
 		"stream_id", dataStream.StreamID(),
 		"name", dataStream.Name(),
 		"client_type", dataStream.ClientType().String(),
